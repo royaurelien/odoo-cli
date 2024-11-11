@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "odoo-cli"
+version = "0.2.0"
+description = "Odoo CLI"
+authors = ["Aurelien Roy <roy.aurelien@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+click = "^8.1.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+odoo-cli = "odoo_cli.cli:main"

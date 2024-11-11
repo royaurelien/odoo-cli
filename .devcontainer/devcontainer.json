@@ -1,0 +1,41 @@
+// .devcontainer/devcontainer.json
+
+{
+    "name": "Odoo Development",
+    "dockerComposeFile": "docker-compose.yml",
+    "shutdownAction": "stopCompose",
+    "service": "odoo",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+      "vscode": {
+        "settings": {
+          "terminal.integrated.shell.linux": "/bin/bash",
+          // Ruff
+          "[python]": {
+            "editor.formatOnSave": true,
+            "editor.codeActionsOnSave": {
+              "source.fixAll": "always",
+              "source.organizeImports": "always"
+            },
+            "editor.defaultFormatter": "charliermarsh.ruff"
+          }
+        },
+        "extensions": [
+          "ms-python.python",
+          "ms-azuretools.vscode-docker",
+          "donjayamanne.python-extension-pack",
+          "charliermarsh.ruff",
+          "ms-toolsai.jupyter"
+        ]
+      }
+    },
+    "forwardPorts": [8069],
+    // "postCreateCommand": "odoo -c /etc/odoo/odoo.conf -d test -i base --stop-after-init --no-http",
+    // "postCreateCommand": "git submodule update --init",
+    // "postStartCommand": "pre-commit install",
+    // "updateContentCommand": "git config --global url.https://x-access-token:${GITHUB_TOKEN}@github.com/.insteadOf ssh://git@github.com/ && git config --global url.https://x-access-token:${GITHUB_TOKEN}@github.com/.insteadOf git@github.com/ && git config --global url.https://x-access-token:${GITHUB_TOKEN}@github.com/.insteadOf git@github.com: && git submodule update --init --recursive",
+    "remoteUser": "root",
+    "features": {
+      "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    }
+  }
