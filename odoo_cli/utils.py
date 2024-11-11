@@ -1,14 +1,18 @@
 import os
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
+
+DEFAULT_LANG = "fr_FR"
+DEFAULT_COUNTRY = "fr"
 
 
 @dataclass
 class Settings:
     user_password: str = os.getenv("ADMIN_PASSWORD", "admin")
     login: str = os.getenv("ADMIN_LOGIN", "admin")
-    lang: str = os.getenv("LANGUAGE", "fr_FR")
-    country_code: str = os.getenv("COUNTRY", "fr")
+    lang: str = os.getenv("LANGUAGE", DEFAULT_LANG)
+    country_code: str = os.getenv("COUNTRY", DEFAULT_COUNTRY)
     db_name: str = os.getenv("DATABASE", "test")
     core_count: str = os.getenv("CORE", "2")
     stage: str = os.getenv("STAGE", "dev")
@@ -16,6 +20,10 @@ class Settings:
 
 
 settings = Settings()
+
+
+def remove_dir(path):
+    shutil.rmtree(path)
 
 
 def _get_timestamp():
@@ -41,17 +49,6 @@ def _get_datetime(timestamp):
     return datetime.fromtimestamp(int(timestamp), timezone.utc).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-
-
-def get_env():
-    return {
-        "user_password": os.getenv("ODOO_ADMIN_PASSWORD", "admin"),
-        "login": os.getenv("ODOO_ADMIN_LOGIN", "admin"),
-        "lang": os.getenv("LANGUAGE", "fr_FR"),
-        "country_code": os.getenv("COUNTRY", "fr"),
-        "db_name": os.getenv("PGDATABASE", "test"),
-        "core_count": os.getenv("CORE", 2),
-    }
 
 
 def get_odoo_args(args):

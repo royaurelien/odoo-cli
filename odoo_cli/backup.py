@@ -6,7 +6,7 @@ import subprocess
 
 import odoo
 
-from odoo_cli.db import db_management_enabled
+from odoo_cli.db import db_management_enabled, init_database
 from odoo_cli.utils import _get_datetime, _get_timestamp, settings
 
 _logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def _get_backup_path():
     return root, os.path.join(root, "dump")
 
 
-def list_backups():
+def get_backups():
     """
     List all available backups in the backup directory.
 
@@ -48,6 +48,7 @@ def list_backups():
                         "date": _get_datetime(item),
                         "filestore": "filestore" in contents,
                         "path": path,
+                        "dump": os.path.join(path, "dump"),
                         "modules": modules,
                     }
                 )
@@ -55,26 +56,7 @@ def list_backups():
     return items
 
 
-def backup_database(filestore=True):
-    """
-    Backup the Odoo database and optionally its filestore.
-    This function creates a backup of the specified Odoo database by dumping
-    its contents and optionally copying its filestore. The backup includes a
-    manifest file with metadata about the database.
-    Args:
-        filestore (bool): If True, the filestore associated with the database
-                          will also be backed up. Defaults to True.
-    Raises:
-        Exception: If an error occurs during the backup process, the exception
-                   is logged, the backup directory is removed, and the error
-                   is re-raised.
-    Side Effects:
-        - Creates a backup directory containing the database dump and manifest file.
-        - Optionally copies the filestore to the backup directory.
-        - Logs warnings and errors related to the backup process.
-    """
-
-    print(settings)
+def save_database(filestore=True):
     path, dump = _get_backup_path()
     db = odoo.sql_db.db_connect(settings.db_name)
 
@@ -106,9 +88,10 @@ def backup_database(filestore=True):
             )
 
         if filestore:
-            _logger.warning("Copying filestore to %s", path)
             fs = odoo.tools.config.filestore(settings.db_name)
-            shutil.copytree(fs, os.path.join(path, "filestore"))
+            if os.path.exists(fs):
+                _logger.warning("Copying filestore to %s", path)
+                shutil.copytree(fs, os.path.join(path, "filestore"))
 
     except Exception as error:
         _logger.error("Error while backing up database %s: %s", settings.db_name, error)
@@ -118,66 +101,44 @@ def backup_database(filestore=True):
         odoo.sql_db.close_db(settings.db_name)
 
 
-def restore_database(dump_name):
+def restore_database(backup: dict, filestore: bool = True, neutralize: bool = True):
     """
     Restore the upgraded database locally using 'core_count' CPU to reduce the restoring time.
     """
     _logger.info(
-        "Restore the dump file '%s' as the database '%s'", dump_name, settings.db_name
+        "Restore the dump file '%s' as the database '%s'",
+        backup["dump"],
+        settings.db_name,
     )
 
+    odoo.service.db._create_empty_database(settings.db_name)
+    env = odoo.tools.misc.exec_pg_environ()
     try:
-        subprocess.check_output(
-            ["createdb", settings.db_name], stderr=subprocess.STDOUT
-        )
         subprocess.check_output(
             [
                 "pg_restore",
                 "--no-owner",
                 "--format",
                 "d",
-                dump_name,
+                backup["dump"],
                 "--dbname",
                 settings.db_name,
                 "--jobs",
                 settings.core_count,
             ],
             stderr=subprocess.STDOUT,
+            env=env,
         )
     except Exception as error:
         _logger.error("Error while restoring the database: %s", error)
+        with db_management_enabled():
+            odoo.service.db.exp_drop(settings.db_name)
         raise error
 
+    init_database(neutralize)
 
-# def restore_filestore(origin_db_name, upgraded_db_name):
-#     """
-#     Restore the new filestore by merging it with the old one, in a folder named
-#     as the upgraded database.
-#     If the previous filestore is not found, the new filestore should be restored manually.
-#     """
-#     if not origin_db_name:
-#         logging.warning(
-#             "The original filestore location could not be determined."
-#             " The filestore of the upgrade database should be restored manually."
-#         )
-#         return
-
-#     origin_fs_path = os.path.join(FILESTORE_PATH, origin_db_name)
-
-#     if os.path.exists(origin_fs_path):
-#         new_fs_path = os.path.join(FILESTORE_PATH, upgraded_db_name)
-
-#         logging.info(
-#             "Merging the new filestore with the old one in %s ...", new_fs_path
-#         )
-#         shutil.copytree(origin_fs_path, new_fs_path)
-#         if os.path.isdir(FILESTORE_NAME):
-#             run_command(["rsync", "-a", FILESTORE_NAME + os.sep, new_fs_path])
-#             shutil.rmtree(FILESTORE_NAME)
-#     else:
-#         logging.warning(
-#             "The original filestore of '%s' has not been found in %s. "
-#             "The filestore of the upgrade database should be restored manually.",
-#             origin_db_name,
-#             FILESTORE_PATH,
-#         )
+    if filestore and backup["filestore"]:
+        from_fs = os.path.join(backup["path"], "filestore")
+        to_fs = odoo.tools.config.filestore(settings.db_name)
+        if os.path.exists(from_fs) and not os.path.exists(to_fs):
+            shutil.copytree(from_fs, to_fs)
