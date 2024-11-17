@@ -40,7 +40,7 @@ def run_start(dev: bool, log_level: str):
 
     wait_for_psql()
 
-    args = get_odoo_args([], database=True)
+    args = get_odoo_args([], database=False)
     args.extend([f"--log-level={log_level}"])
 
     odoo.tools.config.parse_config(args)
@@ -55,6 +55,8 @@ def run_start(dev: bool, log_level: str):
 
     if dev:
         args.extend(["--dev=reload"])
+
+    args.extend(["--database", settings.db_name])
 
     # print(args)
 
