@@ -10,7 +10,7 @@ from pytz import country_timezones
 
 from odoo_cli.common import get_version
 from odoo_cli.db import Environment, create_database, database_exists, drop_database
-from odoo_cli.utils import get_odoo_args, get_pid, settings
+from odoo_cli.utils import get_odoo_args, get_pid, settings, wait_for_psql
 
 ODOO_LOG_LEVELS = [
     "info",
@@ -37,6 +37,8 @@ ODOO_LOG_LEVELS = [
 )
 def run_start(dev: bool, log_level: str):
     """Start Odoo"""
+
+    wait_for_psql()
 
     args = get_odoo_args([], database=True)
     args.extend([f"--log-level={log_level}"])

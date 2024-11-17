@@ -2,6 +2,9 @@ import os
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import sys
+import time
+import psycopg2
 
 DEFAULT_LANG = "fr_FR"
 DEFAULT_COUNTRY = "fr"
@@ -158,3 +161,31 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
     ):
         odoo_args.append("--without-demo=all")
     return args + odoo_args
+
+
+def wait_for_psql(timeout=5):
+    """
+    Wait for the PostgreSQL server to start.
+    """
+    print(settings)
+    start_time = time.time()
+    while (time.time() - start_time) < timeout:
+        try:
+            conn = psycopg2.connect(
+                user=settings.db_user,
+                host=settings.db_host,
+                port=settings.db_port,
+                password=settings.db_password,
+                dbname="postgres",
+            )
+            error = ""
+            break
+        except psycopg2.OperationalError as e:
+            error = e
+        else:
+            conn.close()
+        time.sleep(1)
+
+    if error:
+        print("Database connection failure: %s" % error, file=sys.stderr)
+        sys.exit(1)
