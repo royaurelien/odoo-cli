@@ -44,7 +44,7 @@ class Settings:
     from_filter: str = os.getenv("FROM_FILTER", None)
 
     db_maxconn: int = 16
-    pidfile: str = "/var/run/odoo.pid"
+    pidfile: str = "/var/lib/odoo/odoo.pid"
 
 
 settings = Settings()
