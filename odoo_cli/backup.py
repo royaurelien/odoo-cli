@@ -7,13 +7,13 @@ import subprocess
 import odoo
 
 from odoo_cli.db import db_management_enabled, init_database
-from odoo_cli.utils import _get_datetime, _get_timestamp, settings
+from odoo_cli.utils import get_datetime, get_timestamp, settings
 
 _logger = logging.getLogger(__name__)
 
 
 def _get_backup_path():
-    root = os.path.join(settings.backup_path, _get_timestamp())
+    root = os.path.join(settings.backup_path, get_timestamp())
     os.makedirs(root, exist_ok=True)
     return root, os.path.join(root, "dump")
 
@@ -45,7 +45,7 @@ def get_backups():
                 items.append(
                     {
                         "name": item,
-                        "date": _get_datetime(item),
+                        "date": get_datetime(item),
                         "filestore": "filestore" in contents,
                         "path": path,
                         "dump": os.path.join(path, "dump"),

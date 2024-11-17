@@ -1,24 +1,77 @@
 import os
+import signal
 
 import click
 import odoo
+from odoo.cli.server import main as odoo_main
+from odoo.cli.server import report_configuration
+from odoo.cli.shell import Shell
 from pytz import country_timezones
 
-from odoo_cli.common import find_odoo_bin, get_version, settings
+from odoo_cli.common import get_version
 from odoo_cli.db import Environment, create_database, database_exists, drop_database
-from odoo_cli.utils import get_odoo_args
+from odoo_cli.utils import get_odoo_args, get_pid, settings
+
+ODOO_LOG_LEVELS = [
+    "info",
+    "debug_rpc",
+    "warn",
+    "test",
+    "critical",
+    "runbot",
+    "debug_sql",
+    "error",
+    "debug",
+    "debug_rpc_answer",
+    "notset",
+]
 
 
 @click.command("start")
-@click.option("--init", is_flag=True, default=True, help="Initialize the database")
-def run_start(init):
+@click.option("--dev", is_flag=True, help="Run Odoo in development mode")
+@click.option(
+    "--log-level",
+    default="info",
+    help="Set the log level",
+    type=click.Choice(ODOO_LOG_LEVELS, case_sensitive=False),
+)
+def run_start(dev: bool, log_level: str):
     """Start Odoo"""
 
-    if init and not database_exists():
-        create_database()
+    args = get_odoo_args([], database=True)
+    args.extend([f"--log-level={log_level}"])
 
-    args = get_odoo_args([])
-    os.execvp(find_odoo_bin(), ["odoo-bin"] + args)
+    odoo.tools.config.parse_config(args)
+    addons_path = odoo.tools.config["addons_path"].split(",")
+    if settings.addons_path not in addons_path:
+        addons_path.append(settings.addons_path)
+        odoo.tools.config["addons_path"] = ",".join(addons_path)
+
+    odoo.tools.config.save()
+
+    # os.execvp(find_odoo_bin(), ["odoo-bin"])
+
+    if dev:
+        args.extend(["--dev=reload"])
+
+    # print(args)
+
+    odoo_main(args)
+
+
+@click.command("reload-conf")
+def reload_configuration():
+    """Reload Odoo configuration from environment variables"""
+
+    args = get_odoo_args([], database=False)
+    odoo.tools.config.parse_config(args)
+    addons_path = odoo.tools.config["addons_path"].split(",")
+    if settings.addons_path not in addons_path:
+        addons_path.append(settings.addons_path)
+        odoo.tools.config["addons_path"] = ",".join(addons_path)
+
+    report_configuration()
+    odoo.tools.config.save()
 
 
 @click.command("init")
@@ -39,12 +92,34 @@ def reset_database():
     create_database()
 
 
+@click.command("drop")
+def run_drop_database():
+    """Drop database"""
+
+    if database_exists():
+        drop_database()
+
+
 @click.command("shell")
 def run_shell():
     """Run Odoo Shell"""
 
-    cmd = [find_odoo_bin(), "shell", "-d", "test", "--no-http"]
-    os.execv(cmd[0], cmd)
+    # args = get_odoo_args(["shell", "--no-http"])
+    # os.execvp(find_odoo_bin(), ["odoo-bin"] + args)
+    # # cmd = [find_odoo_bin(), "shell", "-d", settings.db_name, "--no-http"]
+    # # os.execv(cmd[0], cmd)
+
+    args = get_odoo_args(["--no-http"])
+    Shell().run(args)
+
+
+@click.command("restart")
+def restart():
+    """Restart Odoo"""
+
+    # odoo.service.server.restart()
+
+    os.kill(get_pid(), signal.SIGHUP)
 
 
 @click.command("version")

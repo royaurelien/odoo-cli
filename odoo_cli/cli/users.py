@@ -13,12 +13,12 @@ def reset_password():
     with Environment() as env:
         env["res.users"].browse(get_admin_id()).write(
             {
-                "login": settings.login,
-                "password": settings.user_password,
+                "login": settings.admin_login,
+                "password": settings.admin_password,
                 "active": True,
             }
         )
-        click.echo("Password reset for user %s", settings.login)
+        click.echo("Password reset for user %s", settings.admin_login)
 
 
 @click.command("list-users")

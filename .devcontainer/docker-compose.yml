@@ -4,10 +4,10 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
-    command: odoo
+    command: tail -f /dev/null
     volumes:
       - ..:/workspace
-      - ./config:/etc/odoo:rw
+      # - ./config:/etc/odoo:rw
       - odoo-data:/var/lib/odoo
     ports:
       - "8069:8069"

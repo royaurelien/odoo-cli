@@ -27,7 +27,7 @@ WHERE key = 'database.expiration_date';
 SQL_NEUTRALIZE_DATABASE = """
 UPDATE fetchmail_server
    SET active = false;
-                          
+
 UPDATE ir_mail_server
    SET active = false;
 
@@ -43,7 +43,7 @@ UPDATE ir_cron
          FROM ir_model_data
         WHERE model = 'ir.cron'
           AND name = 'autovacuum_job'
-);                       
+);
 """
 SQL_NEUTRALIZE_FETCHMAIL = "UPDATE fetchmail_server SET active = false;"
 
@@ -103,8 +103,8 @@ def create_database(demo=True):
             settings.db_name,
             demo,
             settings.lang,
-            settings.user_password,
-            settings.login,
+            settings.admin_password,
+            settings.admin_login,
             settings.country_code,
             phone=None,
         )

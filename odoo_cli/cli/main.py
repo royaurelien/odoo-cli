@@ -15,7 +15,10 @@ from odoo_cli.cli.backup import (
 )
 from odoo_cli.cli.commands import (
     init_database,
+    reload_configuration,
     reset_database,
+    restart,
+    run_drop_database,
     run_shell,
     run_start,
     update_language,
@@ -46,3 +49,6 @@ main.add_command(reset_password)
 main.add_command(list_users)
 main.add_command(list_backups)
 main.add_command(update_language)
+main.add_command(run_drop_database)
+main.add_command(reload_configuration)
+main.add_command(restart)
