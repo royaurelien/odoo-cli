@@ -29,13 +29,14 @@ ODOO_LOG_LEVELS = [
 
 @click.command("start")
 @click.option("--dev", is_flag=True, help="Run Odoo in development mode")
+@click.option("--force-db", is_flag=True, help="Force database creation")
 @click.option(
     "--log-level",
     default="info",
     help="Set the log level",
     type=click.Choice(ODOO_LOG_LEVELS, case_sensitive=False),
 )
-def run_start(dev: bool, log_level: str):
+def run_start(dev: bool, force_db: bool, log_level: str):
     """Start Odoo"""
 
     wait_for_psql()
@@ -56,9 +57,8 @@ def run_start(dev: bool, log_level: str):
     if dev:
         args.extend(["--dev=reload"])
 
-    args.extend(["--database", settings.db_name])
-
-    # print(args)
+    if force_db:
+        args.extend(["--database", settings.db_name])
 
     odoo_main(args)
 
