@@ -129,7 +129,7 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
         f"--limit-time-real-cron={settings.limit_time_real_cron}",
         f"--limit-request={settings.limit_request}",
         f"--load={settings.load}",
-        # f"--pidfile={settings.pidfile}",
+        f"--pidfile={settings.pidfile}",
     ]
 
     if dev:
@@ -156,8 +156,8 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
         if settings.from_filter:
             odoo_args.extend(["--from-filter", settings.from_filter])
 
-    if not any(arg.startswith("--database") for arg in args) and database:
-        odoo_args.extend(["--database", settings.db_name])
+    # if not any(arg.startswith("--database") for arg in args) and database:
+    #     odoo_args.extend(["--database", settings.db_name])
     if (
         not any(arg.startswith("--without-demo") for arg in args)
         and settings.stage != "dev"

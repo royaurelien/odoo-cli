@@ -15,7 +15,6 @@ services:
       - HOST=postgres
       - USER=odoo
       - PASSWORD=odoo
-      - DATABASE=test
       - STAGE=dev
       - LANGUAGE=fr_FR
       - COUNTRY=FR
