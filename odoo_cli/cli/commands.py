@@ -50,6 +50,7 @@ def run_start(dev: bool, force_db: bool, log_level: str):
         addons_path.append(settings.addons_path)
         odoo.tools.config["addons_path"] = ",".join(addons_path)
 
+    odoo.tools.config["db_name"] = False
     odoo.tools.config.save()
 
     # os.execvp(find_odoo_bin(), ["odoo-bin"])
@@ -75,6 +76,7 @@ def reload_configuration():
         odoo.tools.config["addons_path"] = ",".join(addons_path)
 
     report_configuration()
+    odoo.tools.config["db_name"] = False
     odoo.tools.config.save()
 
 
