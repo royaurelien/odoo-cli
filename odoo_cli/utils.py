@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 import sys
 import time
 import psycopg2
+import logging
+
+_logger = logging.getLogger("odoo")
 
 DEFAULT_LANG = "fr_FR"
 DEFAULT_COUNTRY = "fr"
@@ -163,14 +166,15 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
     return args + odoo_args
 
 
-def wait_for_psql(timeout=5):
+def wait_for_psql(timeout=30):
     """
     Wait for the PostgreSQL server to start.
     """
-    print(settings)
+    _logger.info(settings)
     start_time = time.time()
     while (time.time() - start_time) < timeout:
         try:
+            _logger.info("Trying to connect to the database...")
             conn = psycopg2.connect(
                 user=settings.db_user,
                 host=settings.db_host,
