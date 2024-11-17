@@ -1,5 +1,6 @@
 import os
 import signal
+import sys
 
 import click
 import odoo
@@ -11,11 +12,11 @@ from pytz import country_timezones
 from odoo_cli.common import get_version
 from odoo_cli.db import Environment, create_database, database_exists, drop_database
 from odoo_cli.utils import (
+    fix_addons_path,
     get_odoo_args,
     get_pid,
     settings,
     wait_for_psql,
-    fix_addons_path,
 )
 
 ODOO_LOG_LEVELS = [
@@ -115,7 +116,7 @@ def run_shell():
     # # cmd = [find_odoo_bin(), "shell", "-d", settings.db_name, "--no-http"]
     # # os.execv(cmd[0], cmd)
 
-    args = get_odoo_args(["--no-http"])
+    args = get_odoo_args(["--no-http"], database=True)
     Shell().run(args)
 
 
@@ -125,7 +126,11 @@ def restart():
 
     # odoo.service.server.restart()
 
-    os.kill(get_pid(), signal.SIGHUP)
+    pid = get_pid()
+    if not pid:
+        click.echo("Odoo is not running")
+        sys.exit(1)
+    os.kill(pid, signal.SIGHUP)
 
 
 @click.command("version")

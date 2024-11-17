@@ -1,13 +1,14 @@
+import logging
 import os
 import shutil
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import sys
 import time
-import psycopg2
-import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Optional
 
 import odoo
+import psycopg2
 
 _logger = logging.getLogger("odoo")
 
@@ -68,14 +69,16 @@ def fix_addons_path() -> str:
     return ",".join(addons_path)
 
 
-def get_pid() -> int | None:
+def get_pid() -> Optional[int]:
     """
     Get the PID of the Odoo process.
 
     Returns:
     int: The PID of the Odoo process.
     """
-    with open(settings.pidfile, "r") as f:
+    if not os.path.exists(settings.pidfile):
+        return None
+    with open(settings.pidfile, "r", encoding="utf-8") as f:
         return int(f.read().strip())
 
 
@@ -120,6 +123,17 @@ def get_datetime(timestamp):
 
 
 def get_odoo_args(args, database: bool = True, dev: bool = False):
+    """
+    Generate a list of Odoo command-line arguments based on the provided settings and input arguments.
+
+    Args:
+        args (list): A list of initial command-line arguments.
+        database (bool, optional): Whether to include the database argument. Defaults to True.
+        dev (bool, optional): Whether to include development-specific arguments. Defaults to False.
+
+    Returns:
+        list: A list of command-line arguments for Odoo.
+    """
     odoo_args = [
         "--unaccent",
         "--no-database-list",
@@ -168,8 +182,8 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
         if settings.from_filter:
             odoo_args.extend(["--from-filter", settings.from_filter])
 
-    # if not any(arg.startswith("--database") for arg in args) and database:
-    #     odoo_args.extend(["--database", settings.db_name])
+    if not any(arg.startswith("--database") for arg in args) and database:
+        odoo_args.extend(["--database", settings.db_name])
     if (
         not any(arg.startswith("--without-demo") for arg in args)
         and settings.stage != "dev"
@@ -203,5 +217,5 @@ def wait_for_psql(timeout=30):
         time.sleep(1)
 
     if error:
-        print("Database connection failure: %s" % error, file=sys.stderr)
+        _logger.error("Database connection failure: %s", error)
         sys.exit(1)
