@@ -7,6 +7,8 @@ import time
 import psycopg2
 import logging
 
+import odoo
+
 _logger = logging.getLogger("odoo")
 
 DEFAULT_LANG = "fr_FR"
@@ -54,6 +56,16 @@ class Settings:
 
 
 settings = Settings()
+
+
+def fix_addons_path() -> str:
+    """
+    Fix the addons path.
+    """
+    addons_path = odoo.tools.config["addons_path"].split(",")
+    if settings.addons_path not in addons_path:
+        addons_path.append(settings.addons_path)
+    return ",".join(addons_path)
 
 
 def get_pid() -> int | None:

@@ -10,7 +10,13 @@ from pytz import country_timezones
 
 from odoo_cli.common import get_version
 from odoo_cli.db import Environment, create_database, database_exists, drop_database
-from odoo_cli.utils import get_odoo_args, get_pid, settings, wait_for_psql
+from odoo_cli.utils import (
+    get_odoo_args,
+    get_pid,
+    settings,
+    wait_for_psql,
+    fix_addons_path,
+)
 
 ODOO_LOG_LEVELS = [
     "info",
@@ -41,15 +47,10 @@ def run_start(dev: bool, force_db: bool, log_level: str):
 
     wait_for_psql()
 
-    args = get_odoo_args([], database=False)
-    args.extend([f"--log-level={log_level}"])
+    args = get_odoo_args([f"--log-level={log_level}"], database=False)
 
     odoo.tools.config.parse_config(args)
-    addons_path = odoo.tools.config["addons_path"].split(",")
-    if settings.addons_path not in addons_path:
-        addons_path.append(settings.addons_path)
-        odoo.tools.config["addons_path"] = ",".join(addons_path)
-
+    odoo.tools.config["addons_path"] = fix_addons_path()
     odoo.tools.config["db_name"] = False
     odoo.tools.config.save()
 
@@ -70,19 +71,18 @@ def reload_configuration():
 
     args = get_odoo_args([], database=False)
     odoo.tools.config.parse_config(args)
-    addons_path = odoo.tools.config["addons_path"].split(",")
-    if settings.addons_path not in addons_path:
-        addons_path.append(settings.addons_path)
-        odoo.tools.config["addons_path"] = ",".join(addons_path)
-
-    report_configuration()
+    odoo.tools.config["addons_path"] = fix_addons_path()
     odoo.tools.config["db_name"] = False
     odoo.tools.config.save()
+
+    report_configuration()
 
 
 @click.command("init")
 def init_database():
     """Init database"""
+
+    wait_for_psql()
 
     if not database_exists():
         create_database()
