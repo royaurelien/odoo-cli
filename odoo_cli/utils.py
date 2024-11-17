@@ -126,7 +126,7 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
         f"--limit-time-real-cron={settings.limit_time_real_cron}",
         f"--limit-request={settings.limit_request}",
         f"--load={settings.load}",
-        f"--pidfile={settings.pidfile}",
+        # f"--pidfile={settings.pidfile}",
     ]
 
     if dev:
