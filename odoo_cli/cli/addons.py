@@ -1,9 +1,10 @@
 import os
-
+import sys
 import click
 
 from odoo_cli.common import Environment, find_odoo_bin, settings
 from odoo_cli.db import uninstall
+from odoo_cli.utils import restart_process
 
 
 def _parse_inputs(raw):
@@ -12,7 +13,8 @@ def _parse_inputs(raw):
 
 @click.command("install")
 @click.argument("modules", default="local")
-def install_addons(modules: str):
+@click.option("--restart", is_flag=True, help="Restart Odoo")
+def install_addons(modules: str, restart: bool):
     """Install addons"""
 
     modules = _parse_inputs(modules)
@@ -27,10 +29,18 @@ def install_addons(modules: str):
     ]
     os.execv(cmd[0], cmd)
 
+    if restart:
+        try:
+            restart_process(force=True)
+        except Exception as error:
+            click.echo(error)
+            sys.exit(1)
+
 
 @click.command("update")
 @click.argument("modules", default="local")
-def update_addons(modules: str):
+@click.option("--restart", is_flag=True, help="Restart Odoo")
+def update_addons(modules: str, restart: bool):
     """Update addons"""
 
     modules = _parse_inputs(modules)
@@ -44,6 +54,13 @@ def update_addons(modules: str):
         ",".join(modules),
     ]
     os.execv(cmd[0], cmd)
+
+    if restart:
+        try:
+            restart_process(force=True)
+        except Exception as error:
+            click.echo(error)
+            sys.exit(1)
 
 
 @click.command("uninstall")

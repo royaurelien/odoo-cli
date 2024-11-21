@@ -14,7 +14,7 @@ from odoo_cli.db import Environment, create_database, database_exists, drop_data
 from odoo_cli.utils import (
     fix_addons_path,
     get_odoo_args,
-    get_pid,
+    restart_process,
     settings,
     wait_for_psql,
 )
@@ -121,16 +121,15 @@ def run_shell():
 
 
 @click.command("restart")
-def restart():
+@click.option("--force", is_flag=True, help="Force PID")
+def restart(force: bool):
     """Restart Odoo"""
 
-    # odoo.service.server.restart()
-
-    pid = get_pid()
-    if not pid:
-        click.echo("Odoo is not running")
+    try:
+        restart_process(force=force)
+    except Exception as error:
+        click.echo(error)
         sys.exit(1)
-    os.kill(pid, signal.SIGHUP)
 
 
 @click.command("version")

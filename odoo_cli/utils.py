@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
-
+import signal
 import odoo
 import psycopg2
 
@@ -69,17 +69,29 @@ def fix_addons_path() -> str:
     return ",".join(addons_path)
 
 
-def get_pid() -> Optional[int]:
+def get_pid(force: bool = False) -> Optional[int]:
     """
     Get the PID of the Odoo process.
 
     Returns:
     int: The PID of the Odoo process.
     """
+    if force:
+        return 1
     if not os.path.exists(settings.pidfile):
         return None
     with open(settings.pidfile, "r", encoding="utf-8") as f:
         return int(f.read().strip())
+
+
+def restart_process(force: bool = False):
+
+    # odoo.service.server.restart()
+    pid = get_pid(force=force)
+    if not pid:
+        raise Exception("Odoo is not running")
+
+    os.kill(pid, signal.SIGHUP)
 
 
 def remove_dir(path):
