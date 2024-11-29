@@ -52,7 +52,7 @@ class Settings:
     email_from: str = os.getenv("EMAIL_FROM", None)
     from_filter: str = os.getenv("FROM_FILTER", None)
 
-    db_maxconn: int = 16
+    db_maxconn: int = int(os.getenv("DB_MAXCONN", "32"))
     pidfile: str = "/var/lib/odoo/odoo.pid"
 
 
