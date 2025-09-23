@@ -1,5 +1,3 @@
-import os
-import signal
 import sys
 
 import click
@@ -14,6 +12,7 @@ from odoo_cli.db import Environment, create_database, database_exists, drop_data
 from odoo_cli.utils import (
     fix_addons_path,
     get_odoo_args,
+    random_password,
     restart_process,
     settings,
     wait_for_psql,
@@ -37,18 +36,21 @@ ODOO_LOG_LEVELS = [
 @click.command("start")
 @click.option("--dev", is_flag=True, help="Run Odoo in development mode")
 @click.option("--force-db", is_flag=True, help="Force database creation")
+@click.option("--unsafe", is_flag=True, help="Run Odoo in unsafe mode")
 @click.option(
     "--log-level",
     default="info",
     help="Set the log level",
     type=click.Choice(ODOO_LOG_LEVELS, case_sensitive=False),
 )
-def run_start(dev: bool, force_db: bool, log_level: str):
+def run_start(dev: bool, force_db: bool, unsafe: bool, log_level: str):
     """Start Odoo"""
 
     wait_for_psql()
 
-    args = get_odoo_args([f"--log-level={log_level}"], database=False)
+    args = get_odoo_args(
+        [f"--log-level={log_level}"], database=False, dev=dev, safe=not unsafe
+    )
 
     odoo.tools.config.parse_config(args)
     odoo.tools.config["addons_path"] = fix_addons_path()
@@ -176,3 +178,35 @@ def update_language():
         env.ref("base.user_admin").write({"lang": lang})
         env.cr.execute("SELECT login, password FROM res_users ORDER BY login")
         env.cr.commit()
+
+
+@click.command("regenerate-assets")
+def regenerate_assets():
+    """Regenerate assets"""
+    with Environment() as env:
+        domain = [
+            "&",
+            ["res_model", "=", "ir.ui.view"],
+            "|",
+            ["name", "=like", "%.assets_%.css"],
+            ["name", "=like", "%.assets_%.js"],
+        ]
+        res = env["ir.attachment"].search(domain)
+
+        if res:
+            click.echo(f"Assets found ({len(res)}): {', '.join(res.mapped('name'))}")
+            res.unlink()
+            env.cr.commit()
+
+
+@click.command("reset-master-password")
+def reset_master_password():
+    """Reset master password"""
+
+    new_password = random_password()
+    odoo.tools.config["admin_passwd"] = new_password
+    odoo.tools.config.save()
+
+    click.echo(f"New master password: {new_password}")
+
+    report_configuration()

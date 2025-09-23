@@ -1,24 +1,27 @@
 import click
 
-from odoo_cli.common import get_admin_id
+from odoo_cli.common import guess_admin_id
 from odoo_cli.db import (
     Environment,
 )
-from odoo_cli.utils import settings
+from odoo_cli.utils import random_password, settings
 
 
 @click.command("reset-password")
-def reset_password():
+@click.option("--random", is_flag=True, help="Generate a random password")
+def reset_password(random: bool):
     """Reset admin password"""
     with Environment() as env:
-        env["res.users"].browse(get_admin_id()).write(
+        env["res.users"].browse(guess_admin_id(env)).write(
             {
                 "login": settings.admin_login,
-                "password": settings.admin_password,
+                "password": settings.admin_password
+                if not random
+                else random_password(),
                 "active": True,
             }
         )
-        click.echo("Password reset for user %s", settings.admin_login)
+        click.echo(f"Password admin password with: {settings.admin_password}")
 
 
 @click.command("list-users")

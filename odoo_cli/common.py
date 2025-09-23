@@ -23,10 +23,23 @@ def get_version():
     return int(odoo.release.version[:2])
 
 
-def get_admin_id():
-    # env.ref('base.user_admin')
-    # env.ref('base.user_root')
+def get_default_admin_id():
     return 2 if int(odoo.release.version[:2]) > 11 else 1
+
+
+def guess_admin_id(env=None):
+    # src: odoo/addons/base/data/res_users_data.xml
+
+    if env is None:
+        return get_default_admin_id()
+
+    try:
+        if int(odoo.release.version[:2]) > 11:
+            return env.ref("base.user_admin").id
+        else:
+            return env.ref("base.user_root").id
+    except Exception:
+        return get_default_admin_id()
 
 
 @contextmanager

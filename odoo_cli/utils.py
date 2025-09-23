@@ -1,12 +1,15 @@
 import logging
 import os
+import random
 import shutil
+import signal
+import string
 import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
-import signal
+
 import odoo
 import psycopg2
 
@@ -85,7 +88,6 @@ def get_pid(force: bool = False) -> Optional[int]:
 
 
 def restart_process(force: bool = False):
-
     # odoo.service.server.restart()
     pid = get_pid(force=force)
     if not pid:
@@ -134,7 +136,15 @@ def get_datetime(timestamp):
     )
 
 
-def get_odoo_args(args, database: bool = True, dev: bool = False):
+def random_password(length=12):
+    """Generate a random password of given length."""
+
+    characters = string.ascii_letters + string.digits + string.punctuation
+    password = "".join(random.choice(characters) for i in range(length))
+    return password
+
+
+def get_odoo_args(args, database: bool = True, dev: bool = False, safe: bool = True):
     """
     Generate a list of Odoo command-line arguments based on the provided settings and input arguments.
 
@@ -148,7 +158,6 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
     """
     odoo_args = [
         "--unaccent",
-        "--no-database-list",
         "--db_host",
         settings.db_host,
         f"--db_port={settings.db_port}",
@@ -172,6 +181,9 @@ def get_odoo_args(args, database: bool = True, dev: bool = False):
 
     if dev:
         odoo_args.extend(["--dev=reload"])
+
+    if safe:
+        odoo_args.extend(["--no-database-list"])
 
     if settings.smtp_host and settings.smtp_port:
         odoo_args.extend(
