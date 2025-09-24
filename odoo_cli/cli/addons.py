@@ -1,5 +1,6 @@
 import os
 import sys
+
 import click
 
 from odoo_cli.common import Environment, find_odoo_bin, settings
@@ -72,8 +73,9 @@ def uninstall_addons(modules: str):
     uninstall(modules)
 
 
+@click.option("--export", is_flag=True, help="Ready to export")
 @click.command("list-addons")
-def list_addons():
+def list_addons(export: bool):
     """List addons"""
 
     with Environment() as env:
@@ -95,6 +97,15 @@ def list_addons():
         )
         addons.sort(key=lambda x: x["name"])
 
-        click.echo(f"Addons ({len(addons)}):")
+        click.echo(f"{len(addons)} addons installed")
+
+        if not addons:
+            return 0
+
+        if export:
+            output = ",".join(map(lambda item: item["name"], addons))
+            click.echo(output)
+            return 0
+
         for addon in addons:
             click.echo(f"\t{addon['name']} ({addon['installed_version']})")
