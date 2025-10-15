@@ -3,9 +3,17 @@ import os
 from contextlib import contextmanager
 
 import odoo
-from odoo import SUPERUSER_ID
 
-from odoo_cli.common import Environment
+try:
+    from odoo import SUPERUSER_ID
+except ImportError:
+    from odoo import SUPERUSER_ID, models
+
+    logging.info(
+        f"Odoo >= 19 detected, importing {models.__name__} to support new namespace."
+    )
+
+from odoo_cli.common import Environment, get_registry, get_version
 from odoo_cli.utils import settings
 
 _logger = logging.getLogger(__name__)
@@ -78,8 +86,8 @@ def _neutralize_database(cursor):
 
 
 def neutralize_database():
-    registry = odoo.modules.registry.Registry.new(settings.db_name)
-    with registry.cursor() as cr:
+    registry = get_registry(get_version())
+    with registry.new(settings.db_name).cursor() as cr:
         _neutralize_database(cr)
 
 
@@ -117,8 +125,8 @@ def drop_database():
 
 
 def init_database(neutralize=True):
-    registry = odoo.modules.registry.Registry.new(settings.db_name)
-    with registry.cursor() as cr:
+    registry = get_registry(get_version())
+    with registry.new(settings.db_name).cursor() as cr:
         env = odoo.api.Environment(cr, SUPERUSER_ID, {})
         env["ir.config_parameter"].init(force=True)
 

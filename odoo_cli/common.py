@@ -3,7 +3,15 @@ import shutil
 from contextlib import contextmanager
 
 import odoo
-from odoo import SUPERUSER_ID
+
+try:
+    from odoo import SUPERUSER_ID
+except ImportError:
+    from odoo import SUPERUSER_ID, models
+
+    logging.info(
+        f"Odoo >= 19 detected, importing {models.__name__} to support new namespace."
+    )
 
 from odoo_cli.utils import settings
 
@@ -42,11 +50,23 @@ def guess_admin_id(env=None):
         return get_default_admin_id()
 
 
+def get_registry(version):
+    if version >= 19:
+        from odoo.modules.registry import Registry
+    else:
+        from odoo import registry as Registry
+
+    return Registry
+
+
 @contextmanager
 def Environment(rollback=False, **kwargs):
     try:
-        if int(odoo.release.version[:2]) >= 15:
-            with odoo.registry(settings.db_name).cursor() as cr:
+        version = get_version()
+        if version >= 15:
+            Registry = get_registry(version)
+
+            with Registry(settings.db_name).cursor() as cr:
                 ctx = odoo.api.Environment(cr, SUPERUSER_ID, {})[
                     "res.users"
                 ].context_get()
